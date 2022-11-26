@@ -1,0 +1,92 @@
+target: "all,table-manager"
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  log_level: "debug"
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+
+common:
+  path_prefix: /tmp/loki
+  storage:
+    filesystem:
+      chunks_directory: /tmp/loki/chunks
+      rules_directory: /tmp/loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+ingester_client:
+  pool_config:
+    health_check_ingesters: false
+
+ingester:
+  wal:
+    enabled: true
+    dir: /tmp/wal
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+  autoforget_unhealthy: true
+
+schema_config:
+  configs:
+  - from: 2018-04-15
+    store: aws-dynamo
+    object_store: aws
+    schema: v11
+    index:
+      prefix: loki-index-
+    chunks:
+      prefix: loki-chunks-
+
+storage_config:
+  aws:
+    s3: s3://eu-west-2/${LOKI_STORAGE_BUCKET_NAME}
+    s3forcepathstyle: false
+    region: eu-west-2
+    sse_encryption: true
+    dynamodb:
+      dynamodb_url: dynamodb://eu-west-2
+
+limits_config:
+  reject_old_samples: false
+  reject_old_samples_max_age: 168h
+
+chunk_store_config:
+  max_look_back_period: 0s
+
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 24h
+  # index_tables_provisioning:
+  #   provisioned_write_throughput: 20
+  #   provisioned_read_throughput: 20
+
+ruler:
+  storage:
+    type: s3
+    s3:
+      s3: s3://eu-west-2/${LOKI_STORAGE_BUCKET_NAME}
+      region: eu-west-2
+      sse_encryption: true
+  rule_path: /tmp/loki/rules-temp
+  alertmanager_url: http://localhost:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
